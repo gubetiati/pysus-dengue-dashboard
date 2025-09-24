@@ -1,7 +1,10 @@
 from pysus import SINAN
 import pandas as pd
 import datetime
-import os
+
+# O nome do arquivo a ser gerado
+ano_atual = datetime.date.today().year
+ARQUIVO_FINAL = f"dengue_pr_{ano_atual}.csv"
 
 sinan = SINAN().load()
 
@@ -26,9 +29,7 @@ def baixar_ano(ano):
 if __name__ == "__main__":
     try:
         ano_atual = datetime.date.today().year
-        # AQUI você define o nome do arquivo, APÓS a variável 'ano_atual' ser criada
-        ARQUIVO_FINAL = f"dengue_pr_{ano_atual}.csv" 
-        
+
         df_atual = baixar_ano(ano_atual)
         df_atual.to_csv(ARQUIVO_FINAL, index=False)
         print(f"✅ Base salva com {len(df_atual)} registros totais em '{ARQUIVO_FINAL}'.")
