@@ -21,7 +21,6 @@ jobs:
 
     - name: Instalar dependências
       run: |
-        pip install pysus pandas
         pip install -r requirements.txt
 
     - name: Executar o script Python
