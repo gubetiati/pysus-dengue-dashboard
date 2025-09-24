@@ -4,7 +4,7 @@ import datetime
 
 # O nome do arquivo a ser gerado
 ano_atual = datetime.date.today().year
-ARQUIVO_FINAL = f"dengue_pr_{ano_atual}.csv"
+ARQUIVO_FINAL = f"dengue_parana_{ano_atual}.csv"
 
 sinan = SINAN().load()
 
