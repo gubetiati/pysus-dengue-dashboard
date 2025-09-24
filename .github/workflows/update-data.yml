@@ -9,6 +9,7 @@ on:
 jobs:
   update-data:
     runs-on: ubuntu-latest # O sistema operacional onde o código será executado
+    permissions: write-all
 
     steps:
     - name: Checkout do código
