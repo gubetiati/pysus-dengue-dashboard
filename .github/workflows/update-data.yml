@@ -1,0 +1,41 @@
+name: Atualização Semanal de Dados
+
+# Ação que será executada toda segunda-feira à 1h da manhã
+on:
+  schedule:
+    - cron: '0 1 * * 1' # 'minutos horas dia_do_mes mes dia_da_semana'
+  workflow_dispatch: # Permite rodar manualmente
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest # O sistema operacional onde o código será executado
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v2
+
+    - name: Configurar Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Instalar dependências
+      run: |
+        pip install pysus pandas
+        pip install -r requirements.txt
+
+    - name: Executar o script Python
+      run: |
+        python update_dengue.py
+
+    - name: Configurar Git
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git checkout --orphan gh-pages
+
+    - name: Publicar os dados no GitHub Pages
+      run: |
+        git add .
+        git commit -m "Atualiza dados"
+        git push origin gh-pages --force
