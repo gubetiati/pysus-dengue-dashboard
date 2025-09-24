@@ -1,4 +1,4 @@
-from pysus.online import SINAN
+from pysus import SINAN
 import pandas as pd
 import datetime
 
