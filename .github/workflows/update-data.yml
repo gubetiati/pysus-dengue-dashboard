@@ -47,46 +47,36 @@ jobs:
         # Envia a alteração sem sobrescrever o histórico (SEM --force).
         git push origin gh-pages
 
-# 🔄 ALTERNATIVA FUNCIONAL: Upload para OneDrive usando PowerShell
-    - name: Upload CSV para OneDrive (via PowerShell)
-      shell: pwsh
+    # 🔄 ALTERNATIVA: Upload para OneDrive usando Bash + curl
+    - name: Upload CSV para OneDrive (via curl)
+      shell: bash
       run: |
         # Configurar variáveis
-        $clientId = "${{ secrets.ONEDRIVE_CLIENT_ID }}"
-        $clientSecret = "${{ secrets.ONEDRIVE_CLIENT_SECRET }}"
-        $refreshToken = "${{ secrets.ONEDRIVE_REFRESH_TOKEN }}"
+        CLIENT_ID="${{ secrets.ONEDRIVE_CLIENT_ID }}"
+        CLIENT_SECRET="${{ secrets.ONEDRIVE_CLIENT_SECRET }}"
+        REFRESH_TOKEN="${{ secrets.ONEDRIVE_REFRESH_TOKEN }}"
         
-        # Primeiro, obter um novo access token usando o refresh token
-        $tokenResponse = Invoke-RestMethod -Method POST -Uri "https://login.microsoftonline.com/common/oauth2/v2.0/token" -Body @{
-            client_id = $clientId
-            client_secret = $clientSecret
-            refresh_token = $refreshToken
-            grant_type = 'refresh_token'
-            scope = 'https://graph.microsoft.com/Files.ReadWrite'
-        }
+        echo "Obtendo access token..."
         
-        $accessToken = $tokenResponse.access_token
+        # Obter access token
+        TOKEN_RESPONSE=$(curl -s -X POST \
+          "https://login.microsoftonline.com/common/oauth2/v2.0/token" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&refresh_token=$REFRESH_TOKEN&grant_type=refresh_token&scope=https://graph.microsoft.com/Files.ReadWrite")
+        
+        ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+        
+        echo "Access token obtido!"
         
         # Fazer upload de cada arquivo CSV
-        Get-ChildItem -Path "*.csv" | ForEach-Object {
-            $fileName = $_.Name
-            $fileContent = [System.IO.File]::ReadAllBytes($_.FullName)
-            
-            # Codificar o nome do arquivo para URL
-            $encodedFileName = [System.Web.HttpUtility]::UrlEncode($fileName)
-            
-            # Fazer upload para o OneDrive
-            $uploadUrl = "https://graph.microsoft.com/v1.0/me/drive/root:/PowerBI-Dashboard/$encodedFileName:/content"
-            
-            try {
-                $response = Invoke-RestMethod -Method PUT -Uri $uploadUrl -Headers @{
-                    Authorization = "Bearer $accessToken"
-                } -Body $fileContent -ContentType "text/csv"
-                
-                Write-Host "✅ Arquivo $fileName enviado com sucesso para o OneDrive"
-            }
-            catch {
-                Write-Host "❌ Erro ao enviar $fileName : $($_.Exception.Message)"
-                Write-Host "URL usada: $uploadUrl"
-            }
-        }
+        for csv_file in *.csv; do
+          echo "Enviando arquivo: $csv_file"
+          
+          curl -X PUT \
+            "https://graph.microsoft.com/v1.0/me/drive/root:/PowerBI-Dashboard/$csv_file:/content" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: text/csv" \
+            --data-binary @"$csv_file"
+          
+          echo "✅ $csv_file enviado para OneDrive"
+        done
