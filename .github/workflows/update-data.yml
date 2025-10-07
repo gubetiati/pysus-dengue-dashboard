@@ -36,6 +36,13 @@ jobs:
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
+        
+        # Adiciona o arquivo gerado (ex: dengue_pr_2025.csv).
+        # Os arquivos antigos permanecem no local do runner.
         git add *.csv
-        git commit -m "Adiciona dados do ano atual"
+        
+        # IMPORTANTE: A flag '-a' garante que arquivos já modificados ou novos sejam inclusos.
+        git commit -a -m "Adiciona dados do ano atual [AUTOMACAO]"
+        
+        # Envia a alteração sem sobrescrever o histórico (SEM --force).
         git push origin gh-pages
