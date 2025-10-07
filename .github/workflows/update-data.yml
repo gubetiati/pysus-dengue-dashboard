@@ -47,7 +47,7 @@ jobs:
         # Envia a alteração sem sobrescrever o histórico (SEM --force).
         git push origin gh-pages
 
-    # 🔄 ALTERNATIVA FUNCIONAL: Upload para OneDrive usando PowerShell
+# 🔄 ALTERNATIVA FUNCIONAL: Upload para OneDrive usando PowerShell
     - name: Upload CSV para OneDrive (via PowerShell)
       shell: pwsh
       run: |
@@ -72,11 +72,14 @@ jobs:
             $fileName = $_.Name
             $fileContent = [System.IO.File]::ReadAllBytes($_.FullName)
             
+            # Codificar o nome do arquivo para URL
+            $encodedFileName = [System.Web.HttpUtility]::UrlEncode($fileName)
+            
             # Fazer upload para o OneDrive
-            $uploadUrl = "https://graph.microsoft.com/v1.0/me/drive/root:/PowerBI-Dashboard/$fileName:/content"
+            $uploadUrl = "https://graph.microsoft.com/v1.0/me/drive/root:/PowerBI-Dashboard/$encodedFileName:/content"
             
             try {
-                Invoke-RestMethod -Method PUT -Uri $uploadUrl -Headers @{
+                $response = Invoke-RestMethod -Method PUT -Uri $uploadUrl -Headers @{
                     Authorization = "Bearer $accessToken"
                 } -Body $fileContent -ContentType "text/csv"
                 
@@ -84,5 +87,6 @@ jobs:
             }
             catch {
                 Write-Host "❌ Erro ao enviar $fileName : $($_.Exception.Message)"
+                Write-Host "URL usada: $uploadUrl"
             }
         }
