@@ -1,41 +1,58 @@
 name: Atualização Semanal de Dados
 
-# Ação que será executada toda segunda-feira à 1h da manhã
 on:
   schedule:
-    - cron: '0 1 * * 1' # 'minutos horas dia_do_mes mes dia_da_semana'
+    - cron: '0 1 * * 1' # Executa toda segunda-feira à 1h da manhã
   workflow_dispatch: # Permite rodar manualmente
 
 jobs:
   update-data:
-    runs-on: ubuntu-latest # O sistema operacional onde o código será executado
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Permite que o bot escreva no repositório
 
     steps:
     - name: Checkout do código
       uses: actions/checkout@v2
+      with:
+        ref: gh-pages # <-- Faz o checkout da branch gh-pages
 
     - name: Configurar Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.9'
+        python-version: '3.12.3'
 
     - name: Instalar dependências
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install pysus==1.0.0
+      # pip install -r requirements.txt
 
     - name: Executar o script Python
       run: |
         python update_dengue.py
 
-    - name: Configurar Git
+    - name: Fazer commit e push do novo arquivo
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-        git checkout --orphan gh-pages
+        
+        # Adiciona o arquivo gerado (ex: dengue_pr_2025.csv).
+        # Os arquivos antigos permanecem no local do runner.
+        git add *.csv
+        
+        # IMPORTANTE: A flag '-a' garante que arquivos já modificados ou novos sejam inclusos.
+        git commit -a -m "Adiciona dados do ano atual [AUTOMACAO]"
+        
+        # Envia a alteração sem sobrescrever o histórico (SEM --force).
+        git push origin gh-pages
 
-    - name: Publicar os dados no GitHub Pages
-      run: |
-        git add .
-        git commit -m "Atualiza dados"
-        git push origin gh-pages --force
+    # 🔄 NOVA FUNCIONALIDADE: Upload para OneDrive (NÃO altera o funcionamento atual)
+    - name: Upload dos arquivos CSV para OneDrive
+      uses: burnett01/onedrive-upload@master
+      with:
+        path: '*.csv'  # Envia TODOS os arquivos CSV
+        one-drive-folder: 'PowerBI-Dashboard'
+        one-drive-client-id: ${{ secrets.ONEDRIVE_CLIENT_ID }}
+        one-drive-client-secret: ${{ secrets.ONEDRIVE_CLIENT_SECRET }}
+        one-drive-refresh-token: ${{ secrets.ONEDRIVE_REFRESH_TOKEN }}
