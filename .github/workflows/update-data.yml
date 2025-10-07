@@ -26,7 +26,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pysus==1.0.0
-      # pip install -r requirements.txt
+        pip install requests  # ⬅️ ADICIONADO para o upload
 
     - name: Executar o script Python
       run: |
@@ -47,12 +47,42 @@ jobs:
         # Envia a alteração sem sobrescrever o histórico (SEM --force).
         git push origin gh-pages
 
-    # 🔄 NOVA FUNCIONALIDADE: Upload para OneDrive (NÃO altera o funcionamento atual)
-    - name: Upload dos arquivos CSV para OneDrive
-      uses: burnett01/onedrive-upload@master
-      with:
-        path: '*.csv'  # Envia TODOS os arquivos CSV
-        one-drive-folder: 'PowerBI-Dashboard'
-        one-drive-client-id: ${{ secrets.ONEDRIVE_CLIENT_ID }}
-        one-drive-client-secret: ${{ secrets.ONEDRIVE_CLIENT_SECRET }}
-        one-drive-refresh-token: ${{ secrets.ONEDRIVE_REFRESH_TOKEN }}
+    # 🔄 ALTERNATIVA FUNCIONAL: Upload para OneDrive usando PowerShell
+    - name: Upload CSV para OneDrive (via PowerShell)
+      shell: pwsh
+      run: |
+        # Configurar variáveis
+        $clientId = "${{ secrets.ONEDRIVE_CLIENT_ID }}"
+        $clientSecret = "${{ secrets.ONEDRIVE_CLIENT_SECRET }}"
+        $refreshToken = "${{ secrets.ONEDRIVE_REFRESH_TOKEN }}"
+        
+        # Primeiro, obter um novo access token usando o refresh token
+        $tokenResponse = Invoke-RestMethod -Method POST -Uri "https://login.microsoftonline.com/common/oauth2/v2.0/token" -Body @{
+            client_id = $clientId
+            client_secret = $clientSecret
+            refresh_token = $refreshToken
+            grant_type = 'refresh_token'
+            scope = 'https://graph.microsoft.com/Files.ReadWrite'
+        }
+        
+        $accessToken = $tokenResponse.access_token
+        
+        # Fazer upload de cada arquivo CSV
+        Get-ChildItem -Path "*.csv" | ForEach-Object {
+            $fileName = $_.Name
+            $fileContent = [System.IO.File]::ReadAllBytes($_.FullName)
+            
+            # Fazer upload para o OneDrive
+            $uploadUrl = "https://graph.microsoft.com/v1.0/me/drive/root:/PowerBI-Dashboard/$fileName:/content"
+            
+            try {
+                Invoke-RestMethod -Method PUT -Uri $uploadUrl -Headers @{
+                    Authorization = "Bearer $accessToken"
+                } -Body $fileContent -ContentType "text/csv"
+                
+                Write-Host "✅ Arquivo $fileName enviado com sucesso para o OneDrive"
+            }
+            catch {
+                Write-Host "❌ Erro ao enviar $fileName : $($_.Exception.Message)"
+            }
+        }
