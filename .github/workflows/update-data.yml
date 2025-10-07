@@ -46,3 +46,13 @@ jobs:
         
         # Envia a alteração sem sobrescrever o histórico (SEM --force).
         git push origin gh-pages
+
+    # 🔄 NOVA FUNCIONALIDADE: Upload para OneDrive (NÃO altera o funcionamento atual)
+    - name: Upload dos arquivos CSV para OneDrive
+      uses: burnett01/onedrive-upload@master
+      with:
+        path: '*.csv'  # Envia TODOS os arquivos CSV
+        one-drive-folder: 'PowerBI-Dashboard'
+        one-drive-client-id: ${{ secrets.ONEDRIVE_CLIENT_ID }}
+        one-drive-client-secret: ${{ secrets.ONEDRIVE_CLIENT_SECRET }}
+        one-drive-refresh-token: ${{ secrets.ONEDRIVE_REFRESH_TOKEN }}
