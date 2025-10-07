@@ -47,36 +47,29 @@ jobs:
         # Envia a alteração sem sobrescrever o histórico (SEM --force).
         git push origin gh-pages
 
-    # 🔄 ALTERNATIVA: Upload para OneDrive usando Bash + curl
-    - name: Upload CSV para OneDrive (via curl)
-      shell: bash
+    - name: Upload para Azure Blob Storage
+      shell: pwsh
       run: |
-        # Configurar variáveis
-        CLIENT_ID="${{ secrets.ONEDRIVE_CLIENT_ID }}"
-        CLIENT_SECRET="${{ secrets.ONEDRIVE_CLIENT_SECRET }}"
-        REFRESH_TOKEN="${{ secrets.ONEDRIVE_REFRESH_TOKEN }}"
+        # Instalar módulo Azure Storage
+        Install-Module -Name Az.Storage -Force -AllowClobber
         
-        echo "Obtendo access token..."
+        # Configurar credenciais
+        $connectionString = "${{ secrets.AZURE_CONNECTION_STRING }}"
+        $containerName = "dengue-csv"
+        $ctx = New-AzStorageContext -ConnectionString $connectionString
         
-        # Obter access token
-        TOKEN_RESPONSE=$(curl -s -X POST \
-          "https://login.microsoftonline.com/common/oauth2/v2.0/token" \
-          -H "Content-Type: application/x-www-form-urlencoded" \
-          -d "client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&refresh_token=$REFRESH_TOKEN&grant_type=refresh_token&scope=https://graph.microsoft.com/Files.ReadWrite")
-        
-        ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
-        
-        echo "Access token obtido!"
-        
-        # Fazer upload de cada arquivo CSV
-        for csv_file in *.csv; do
-          echo "Enviando arquivo: $csv_file"
-          
-          curl -X PUT \
-            "https://graph.microsoft.com/v1.0/me/drive/root:/PowerBI-Dashboard/$csv_file:/content" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: text/csv" \
-            --data-binary @"$csv_file"
-          
-          echo "✅ $csv_file enviado para OneDrive"
-        done
+        # Fazer upload de cada CSV
+        Get-ChildItem -Path "*.csv" | ForEach-Object {
+            $fileName = $_.Name
+            try {
+                Set-AzStorageBlobContent -File $_.FullName `
+                                         -Container $containerName `
+                                         -Blob $fileName `
+                                         -Context $ctx `
+                                         -Force
+                Write-Host "✅ $fileName enviado para Azure Blob Storage"
+            }
+            catch {
+                Write-Host "❌ Erro ao enviar $fileName : $($_.Exception.Message)"
+            }
+        }
