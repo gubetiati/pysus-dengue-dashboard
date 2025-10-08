@@ -52,14 +52,11 @@ jobs:
       run: |
         # Instalar módulo Azure Storage
         Install-Module -Name Az.Storage -Force -AllowClobber
-        
-        # Configurar credenciais
         $connectionString = "${{ secrets.AZURE_CONNECTION_STRING }}"
-        $containerName = "dengue-csv"
+        $containerName = "dengue-csv-2025"
         $ctx = New-AzStorageContext -ConnectionString $connectionString
-        
-        # Fazer upload de cada CSV
-        Get-ChildItem -Path "*.csv" | ForEach-Object {
+
+        Get-ChildItem -Path "./dengue_parana_2025.csv" | ForEach-Object {
             $fileName = $_.Name
             try {
                 Set-AzStorageBlobContent -File $_.FullName `
