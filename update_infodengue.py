@@ -139,7 +139,7 @@ def main():
         
         # Salva em CSV
         nome_arquivo = "infodengue.csv"
-        df_final.to_csv(nome_arquivo, index=False, encoding='utf-8-sig')
+        df_final.to_csv(nome_arquivo, index=False, sep=",", encoding='utf-8')
         
         print()
         print(f"✓ Arquivo salvo: {nome_arquivo}")
@@ -162,4 +162,5 @@ def main():
 
 # Executa o script
 if __name__ == "__main__":
+
     df_parana = main()
