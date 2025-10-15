@@ -64,6 +64,10 @@ def baixar_dados_infodengue(geocode, cidade, disease='dengue', anoInicial=2023, 
             df = pd.DataFrame(data)
             df['cidade'] = cidade
             df['geocode'] = geocode
+            
+        if 'data_iniSE' in df.columns:
+            df['data_iniSE'] = pd.to_datetime(df['data_iniSE'], unit='ms')
+            
             print(f"✓ {cidade}: {len(df)} registros")
             return df
         else:
@@ -164,3 +168,4 @@ def main():
 if __name__ == "__main__":
 
     df_parana = main()
+
